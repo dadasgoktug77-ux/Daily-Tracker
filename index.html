@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Günlük Takip / Daily Tracker</title>
+<style>
+body { font-family: Arial; background: #f2f2f2; text-align: center; padding-top: 40px; transition: 0.3s; }
+.dark { background: #121212; color: white; }
+.box { background: white; width: 360px; margin: auto; padding: 25px; border-radius: 10px; }
+.dark .box { background: #1e1e1e; }
+button { padding: 10px; margin: 6px; font-size: 14px; cursor: pointer; }
+#yapBtn { background: green; color: white; border: none; }
+#resetBtn { background: red; color: white; border: none; }
+#darkBtn { background: #333; color: white; border: none; }
+.bar { height: 15px; background: green; margin-top: 5px; border-radius: 5px; }
+#dilSecici, #hedefInput, #hedefBtn { margin-bottom: 10px; padding: 5px; font-size: 14px; text-align: center; }
+.box img { display: block; margin: 0 auto 15px auto; }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <img src="logo.png" width="120" alt="Logo">
+  <select id="dilSecici" onchange="degistirDil()">
+    <option value="tr">Türkçe</option>
+    <option value="en">English</option>
+  </select>
+
+  <h2>Günlük Takip</h2>
+  <p id="pGun">Toplam gün: <b id="gun">0</b></p>
+  <p id="pStreak">🔥 Ardışık Gün: <b id="streak">0</b></p>
+  <p id="pHedef">🎯 Hedef: <span id="hedefDeger">30</span> gün</p>
+  <input type="number" id="hedefInput" min="1" placeholder="Hedef gün">
+  <button id="hedefBtn" onclick="hedefiGuncelle()">Hedefi Ayarla</button>
+  <p id="pSon">📅 Son gün: <span id="son">-</span></p>
+
+  <div class="bar" id="bar"></div>
+
+  <button id="yapBtn" onclick="yaptim()">Bugün yaptım</button><br>
+  <button id="darkBtn" onclick="darkMode()">🌙 Karanlık Mod</button>
+  <button id="resetBtn" onclick="reset()">🔄 Sıfırla</button>
+
+  <p id="mesaj"></p>
+</div>
+
+<script>
+// Başlangıç verileri
+let gun = Number(localStorage.getItem("gun")) || 0;
+let streak = Number(localStorage.getItem("streak")) || 0;
+let sonGun = localStorage.getItem("sonGun"); // "yyyy-mm-dd"
+let dark = localStorage.getItem("dark");
+let hedef = Number(localStorage.getItem("hedef")) || 30;
+
+// Tarihler
+const aylarTR = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+const aylarEN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const bugunObj = new Date();
+const bugunStr = bugunObj.toISOString().split("T")[0]; // "yyyy-mm-dd"
+
+function formatTarihTR(d){ return `${d.getDate()} ${aylarTR[d.getMonth()]} ${d.getFullYear()}`; }
+function formatTarihEN(d){ return `${aylarEN[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`; }
+
+// Günü kontrol et ve butonu kilitle
+function kontrolBugun(){
+  if(sonGun === bugunStr){
+    document.getElementById("yapBtn").disabled = true;
+    document.getElementById("mesaj").innerText = seciliDil()==="tr" ? "Bugün zaten yaptın 👍" : "You already did today 👍";
+  } else {
+    document.getElementById("yapBtn").disabled = false;
+    document.getElementById("mesaj").innerText = "";
+  }
+}
+
+// Başlangıç gösterimleri
+function gosterTum(){
+  document.getElementById("gun").innerText = gun;
+  document.getElementById("streak").innerText = streak;
+  document.getElementById("hedefDeger").innerText = hedef;
+  document.getElementById("bar").style.width = Math.min(gun*100/hedef,100) + "%";
+  document.getElementById("son").innerText = gosterSonGun();
+  kontrolBugun();
+}
+
+function gosterSonGun(){
+  if(!sonGun) return "-";
+  const d = new Date(sonGun);
+  return seciliDil()==="tr" ? formatTarihTR(d) : formatTarihEN(d);
+}
+
+// Yaptım fonksiyonu
+function yaptim(){
+  if(sonGun === bugunStr) return; // gün başına bir kez
+  gun++;
+  streak++;
+  sonGun = bugunStr;
+  localStorage.setItem("gun", gun);
+  localStorage.setItem("streak", streak);
+  localStorage.setItem("sonGun", sonGun);
+  gosterTum();
+  document.getElementById("mesaj").innerText = seciliDil()==="tr" ? "Kaydedildi ✅" : "Saved ✅";
+}
+
+// Dark mode
+function darkMode(){
+  document.body.classList.toggle("dark");
+  localStorage.setItem("dark", document.body.classList.contains("dark") ? "on":"off");
+}
+
+// Reset
+function reset(){
+  if(confirm(seciliDil()==="tr" ? "Her şeyi sıfırlamak istiyor musun?" : "Do you want to reset everything?")){
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// Dil seçimi
+function seciliDil(){ return document.getElementById("dilSecici").value; }
+
+// Dil değiştirme
+function degistirDil(){
+  const dil = seciliDil();
+  if(dil==="tr"){
+    document.querySelector("h2").innerText="Günlük Takip";
+    document.getElementById("yapBtn").innerText="Bugün yaptım";
+    document.getElementById("darkBtn").innerText="🌙 Karanlık Mod";
+    document.getElementById("resetBtn").innerText="🔄 Sıfırla";
+    document.getElementById("hedefBtn").innerText="Hedefi Ayarla";
+    document.getElementById("hedefInput").placeholder="Hedef gün";
+    document.getElementById("pGun").innerHTML=`Toplam gün: <b id="gun">${gun}</b>`;
+    document.getElementById("pStreak").innerHTML=`🔥 Ardışık Gün: <b id="streak">${streak}</b>`;
+    document.getElementById("pHedef").innerText=`🎯 Hedef: ${hedef} gün`;
+    document.getElementById("pSon").innerHTML=`📅 Son gün: <span id="son">${gosterSonGun()}</span>`;
+  } else {
+    document.querySelector("h2").innerText="Daily Tracker";
+    document.getElementById("yapBtn").innerText="Done Today";
+    document.getElementById("darkBtn").innerText="🌙 Dark Mode";
+    document.getElementById("resetBtn").innerText="🔄 Reset";
+    document.getElementById("hedefBtn").innerText="Set Goal";
+    document.getElementById("hedefInput").placeholder="Goal days";
+    document.getElementById("pGun").innerHTML=`Total Days: <b id="gun">${gun}</b>`;
+    document.getElementById("pStreak").innerHTML=`🔥 Streak: <b id="streak">${streak}</b>`;
+    document.getElementById("pHedef").innerText=`🎯 Goal: ${hedef} days`;
+    document.getElementById("pSon").innerHTML=`📅 Last Day: <span id="son">${gosterSonGun()}</span>`;
+  }
+}
+
+// Hedefi güncelle
+function hedefiGuncelle(){
+  const yeniHedef=Number(document.getElementById("hedefInput").value);
+  if(yeniHedef>0){
+    hedef=yeniHedef;
+    localStorage.setItem("hedef", hedef);
+    const dil=seciliDil();
+    document.getElementById("hedefDeger").innerText=hedef;
+    document.getElementById("bar").style.width=Math.min(gun*100/hedef,100)+"%";
+    if(dil==="tr") document.getElementById("pHedef").innerText=`🎯 Hedef: ${hedef} gün`;
+    else document.getElementById("pHedef").innerText=`🎯 Goal: ${hedef} days`;
+    document.getElementById("hedefInput").value="";
+  } else { alert(seciliDil()==="tr"?"Lütfen geçerli bir sayı girin.":"Please enter a valid number."); }
+}
+
+// Başlangıç
+if(dark==="on") document.body.classList.add("dark");
+degistirDil();
+gosterTum();
+</script>
+</body>
+</html>
